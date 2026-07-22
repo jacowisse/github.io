@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="✓ Tests" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="npm run test" />
+    <option name="SCRIPT_TEXT" value="export NVM_DIR=&quot;$HOME/.nvm&quot;; . &quot;$NVM_DIR/nvm.sh&quot;; nvm use &amp;&amp; npm run test" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
     <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
