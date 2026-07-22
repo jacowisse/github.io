@@ -1,7 +1,7 @@
 site:
   title: "NoviForge"
   description: "Expert IT consulting in API Management, IAM, Linux, Kubernetes, Java, and Python"
-  url: "https://www.example.nl"
+  url: "https://www.noviforge.nl"
   language: "en"
 
 nav:
