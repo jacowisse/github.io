@@ -1,0 +1,124 @@
+---
+title: "Kubernetes High Availability: Core Concepts"
+description: "How to design a highly available Kubernetes cluster — control plane redundancy, workload distribution, and health-based failover."
+pubDate: 2026-07-01
+tags: ["Kubernetes", "Infrastructure", "High Availability"]
+---
+
+A single-node Kubernetes cluster is convenient for development but is a single point of
+failure in production. This article walks through the key concepts for building an HA cluster.
+
+## Control plane redundancy
+
+The control plane consists of the API server, etcd, the scheduler, and the controller manager.
+For HA, you need at least three control-plane nodes so that etcd — which uses the Raft consensus
+algorithm — can tolerate the loss of one node.
+
+```text
+┌──────────────────────────────────────────────┐
+│  Load balancer (e.g. HAProxy / kube-vip)     │
+└───────────┬──────────────┬───────────────────┘
+            │              │
+  ┌─────────▼──────┐  ┌────▼───────────┐  ┌────────────────┐
+  │  Control  [1]  │  │  Control  [2]  │  │  Control  [3]  │
+  │  API / etcd    │  │  API / etcd    │  │  API / etcd    │
+  └────────────────┘  └────────────────┘  └────────────────┘
+```
+
+Use `kubeadm` with `--control-plane-endpoint` pointing to the load-balancer VIP:
+
+```bash
+kubeadm init \
+  --control-plane-endpoint "k8s-api.example.internal:6443" \
+  --upload-certs \
+  --pod-network-cidr 10.244.0.0/16
+```
+
+Additional control-plane nodes join with:
+
+```bash
+kubeadm join k8s-api.example.internal:6443 \
+  --token <token> \
+  --discovery-token-ca-cert-hash sha256:<hash> \
+  --control-plane \
+  --certificate-key <cert-key>
+```
+
+## Pod disruption budgets
+
+Prevent all replicas of a deployment from being evicted simultaneously during node
+maintenance or rolling updates.
+
+```yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-pdb
+spec:
+  minAvailable: 2       # Always keep at least 2 pods running
+  selector:
+    matchLabels:
+      app: api
+```
+
+## Liveness and readiness probes
+
+Kubernetes relies on probes to decide whether to route traffic to a pod and whether to
+restart it.
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+```
+
+- **Liveness**: if this fails, the pod is restarted.
+- **Readiness**: if this fails, the pod is removed from the Service endpoints (no traffic).
+
+## Node affinity and topology spread
+
+Spread replicas across availability zones to survive zone failures:
+
+```yaml
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app: api
+```
+
+---
+
+{/* Replace the SVG below with your own architecture diagram */}
+<div class="diagram">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 200">
+    <rect x="10"  y="10"  width="150" height="80" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="85"  y="45"  text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#4c1d95">Control Plane</text>
+    <text x="85"  y="62"  text-anchor="middle" font-family="system-ui" font-size="11" fill="#6d28d9">3 × etcd + API</text>
+    <rect x="10"  y="110" width="150" height="80" rx="6" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+    <text x="85"  y="155" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#065f46">Worker nodes</text>
+    <rect x="200" y="10"  width="140" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="270" y="45"  text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Zone A</text>
+    <rect x="200" y="110" width="140" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="270" y="155" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Zone B</text>
+    <rect x="370" y="60"  width="140" height="80" rx="6" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+    <text x="440" y="100" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#713f12">Load Balancer</text>
+    <line x1="160" y1="50"  x2="200" y2="50"  stroke="#6b7280" stroke-width="1.5"/>
+    <line x1="160" y1="150" x2="200" y2="150" stroke="#6b7280" stroke-width="1.5"/>
+    <line x1="340" y1="50"  x2="370" y2="100" stroke="#6b7280" stroke-width="1.5"/>
+    <line x1="340" y1="150" x2="370" y2="100" stroke="#6b7280" stroke-width="1.5"/>
+  </svg>
+</div>

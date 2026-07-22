@@ -1,0 +1,36 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+
+const posts = (await getCollection("blog")).sort(
+  (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
+    b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+}
+---
+<Base title="Blogs" description="Technical articles on API Management, Kubernetes, IAM, and more.">
+  <section class="hero" style="padding: 3.5rem 1.5rem;">
+    <h1>Blogs</h1>
+    <p>Technical deep-dives on the topics we work with every day.</p>
+  </section>
+
+  <section class="section">
+    <div class="blog-list">
+      {posts.map((post: CollectionEntry<"blog">) => (
+        <article class="blog-card">
+          <h2><a href={`/blog/${post.id}`}>{post.data.title}</a></h2>
+          <div class="blog-meta">
+            <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+            {post.data.tags?.map((tag: string) => <span class="tag">{tag}</span>)}
+          </div>
+          <p>{post.data.description}</p>
+          <a href={`/blog/${post.id}`} style="font-weight:600;font-size:.9rem;">Read more →</a>
+        </article>
+      ))}
+    </div>
+  </section>
+</Base>

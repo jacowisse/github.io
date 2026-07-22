@@ -1,0 +1,60 @@
+---
+import Base from "../layouts/Base.astro";
+
+const areas = [
+  {
+    icon: "⚙️",
+    title: "API Management",
+    description:
+      "We design and implement API management solutions using platforms such as WSO2, Kong, and IBM API Connect. Our approach covers the full API lifecycle: design-first with OpenAPI, gateway configuration, rate limiting, security policies, and developer portal setup.",
+  },
+  {
+    icon: "🔐",
+    title: "IAM — Keycloak",
+    description:
+      "Identity and Access Management is a cornerstone of modern application security. We specialise in Keycloak deployments for enterprise environments: Single Sign-On (SSO), OAuth 2.0 / OpenID Connect, fine-grained authorisation, multi-tenancy, and federation with Active Directory or LDAP.",
+  },
+  {
+    icon: "🐧",
+    title: "Linux",
+    description:
+      "Deep expertise in enterprise Linux (RHEL, CentOS, Debian/Ubuntu). We handle system hardening, performance tuning, automation with Ansible, and support high-availability configurations using Pacemaker and Corosync.",
+  },
+  {
+    icon: "☸️",
+    title: "Kubernetes",
+    description:
+      "From cluster bootstrapping to production workloads, we cover the full Kubernetes stack: multi-node cluster setup, networking (Calico, Cilium), storage (Longhorn, Rook/Ceph), RBAC, GitOps with ArgoCD or Flux, and observability with Prometheus and Grafana.",
+  },
+  {
+    icon: "☕",
+    title: "Java",
+    description:
+      "Enterprise Java development with Jakarta EE, Spring Boot, and Quarkus. We build microservices, batch processing applications, and REST/gRPC APIs — with a strong focus on testability, maintainability, and cloud-native deployment.",
+  },
+  {
+    icon: "🐍",
+    title: "Python",
+    description:
+      "Automation scripts, data pipelines, REST clients, and lightweight services built in Python. We use frameworks such as FastAPI and Pydantic for typed, well-documented APIs, and leverage the rich Python ecosystem for tooling and integration tasks.",
+  },
+];
+---
+<Base title="Expertise" description="Our technical expertise in API Management, IAM, Linux, Kubernetes, Java, and Python.">
+  <section class="hero" style="padding: 3.5rem 1.5rem;">
+    <h1>Our Expertise</h1>
+    <p>Deep technical knowledge across the full stack — from infrastructure to application layer.</p>
+  </section>
+
+  <section class="section">
+    <div class="card-grid">
+      {areas.map((area) => (
+        <div class="card">
+          <div class="card-icon">{area.icon}</div>
+          <h3>{area.title}</h3>
+          <p>{area.description}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+</Base>

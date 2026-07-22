@@ -1,0 +1,67 @@
+---
+import Base from "../layouts/Base.astro";
+import EmailLink from "../components/EmailLink.astro";
+const updated = "2026-07-21";
+---
+<Base title="Privacy Statement" description="Privacy statement for NoviForge B.V.">
+  <div class="prose">
+    <h1>Privacy Statement</h1>
+    <p class="lead">Last updated: {updated}</p>
+
+    <h2>1. Introduction</h2>
+    <p>
+      NoviForge B.V. ("we", "us", "our") respects your privacy and is committed to protecting
+      any personal data you share with us. This statement explains what data we collect,
+      why we collect it, and how we use it.
+    </p>
+
+    <h2>2. No cookies</h2>
+    <p>
+      This website does <strong>not use cookies</strong> of any kind — neither functional,
+      analytical, nor tracking cookies. No information is stored in your browser, and no
+      data is sent to third-party analytics or advertising services.
+    </p>
+
+    <h2>3. Data we collect</h2>
+    <p>
+      We only process personal data that you provide to us voluntarily, for example by
+      sending us an email. This may include your name and email address. We do not collect
+      any data automatically from visitors to this website.
+    </p>
+
+    <h2>4. Purpose of processing</h2>
+    <p>
+      Personal data you send to us is used solely to respond to your enquiry or to fulfil a
+      contract. We do not use your data for marketing purposes without your explicit consent,
+      and we do not sell or share your data with third parties.
+    </p>
+
+    <h2>5. Data retention</h2>
+    <p>
+      We retain personal data only for as long as necessary for the purpose for which it was
+      collected, or as required by applicable law. Email correspondence is retained for a
+      maximum of two years unless a longer retention period is required by law.
+    </p>
+
+    <h2>6. Your rights</h2>
+    <p>Under the General Data Protection Regulation (GDPR), you have the right to:</p>
+    <ul>
+      <li>Access the personal data we hold about you</li>
+      <li>Request correction of inaccurate data</li>
+      <li>Request erasure of your data</li>
+      <li>Object to or restrict processing</li>
+      <li>Lodge a complaint with the Dutch Data Protection Authority (Autoriteit Persoonsgegevens)</li>
+    </ul>
+
+    <h2>7. Contact</h2>
+    <p>
+      For any questions or requests regarding this privacy statement or the processing of your
+      personal data, please contact us at:
+    </p>
+    <p>
+      <strong>NoviForge B.V.</strong><br />
+      Attn: Jaco Wisse<br />
+      <EmailLink user="info" domain="noviforge.nl" />
+    </p>
+  </div>
+</Base>

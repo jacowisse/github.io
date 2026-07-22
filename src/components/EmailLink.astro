@@ -1,0 +1,35 @@
+---
+// Email address is split into parts so it never appears as a complete
+// address in the HTML source. JavaScript assembles it client-side.
+// Bots that don't execute JavaScript will not find the email.
+interface Props {
+  user: string;
+  domain: string;
+  label?: string;   // optional display text; defaults to reconstructed email
+}
+const { user, domain, label } = Astro.props;
+const id = `email-${Math.random().toString(36).slice(2, 8)}`;
+---
+<a
+  id={id}
+  href="#"
+  data-u={user}
+  data-d={domain}
+  data-l={label ?? ""}
+  onclick="return false;"
+>
+  {label ?? <span aria-hidden="true">{user}<span style="display:none">REMOVE</span>&#64;{domain}</span>}
+</a>
+<script>
+  (function () {
+    document.querySelectorAll("a[data-u][data-d]").forEach(function (el) {
+      const u = el.getAttribute("data-u");
+      const d = el.getAttribute("data-d");
+      const l = el.getAttribute("data-l");
+      const email = u + "\u0040" + d;
+      el.setAttribute("href", "mai" + "lto:" + email);
+      el.removeAttribute("onclick");
+      if (!l) el.textContent = email;
+    });
+  })();
+</script>

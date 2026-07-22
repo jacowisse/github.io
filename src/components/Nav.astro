@@ -1,0 +1,11 @@
+---
+import { config } from "../config";
+const current = Astro.url.pathname;
+---
+<nav>
+  {config.nav.map((item) => (
+    <a href={item.href} aria-current={item.href === "/" ? current === "/" : current.startsWith(item.href) ? "page" : undefined}>
+      {item.label}
+    </a>
+  ))}
+</nav>

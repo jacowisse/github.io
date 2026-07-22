@@ -1,0 +1,35 @@
+---
+import { config } from "../config";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import "../styles/global.css";
+
+interface Props { title?: string; description?: string; }
+const { title, description } = Astro.props;
+const pageTitle = title ? `${title} — ${config.site.title}` : config.site.title;
+const metaDesc = description ?? config.site.description;
+---
+<!doctype html>
+<html lang={config.site.language}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={metaDesc} />
+    <title>{pageTitle}</title>
+    <link rel="icon" type="image/svg+xml" href="/NoviForge-3-color.svg" />
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <a href="/" class="brand">
+          <img src="/NoviForge-3-color.svg" alt="NoviForge" />
+        </a>
+        <Nav />
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

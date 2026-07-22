@@ -1,0 +1,179 @@
+---
+title: "Keycloak in Production: IAM for Enterprise Applications"
+description: "How to deploy and configure Keycloak for enterprise Identity and Access Management — realms, clients, OIDC flows, federation, and high availability."
+pubDate: 2026-07-15
+tags: ["IAM", "Keycloak", "Security"]
+---
+
+Keycloak is an open-source Identity and Access Management (IAM) solution maintained by
+Red Hat. It provides Single Sign-On (SSO), OAuth 2.0, OpenID Connect (OIDC), and SAML 2.0
+out of the box — making it one of the most capable self-hosted IAM platforms available.
+
+## Core concepts
+
+Before diving into configuration, it helps to understand the key building blocks:
+
+| Concept | Description |
+|---|---|
+| **Realm** | An isolated namespace for users, clients, and policies |
+| **Client** | An application that delegates authentication to Keycloak |
+| **User** | A person or service account managed within a realm |
+| **Role** | A named permission assigned to users or clients |
+| **Identity Provider** | An external IdP (e.g. Active Directory, Google) federated into the realm |
+
+## Deploying on Kubernetes
+
+Keycloak ships with an official Kubernetes Operator. A minimal production-ready deployment:
+
+```yaml
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: iam
+spec:
+  instances: 3                    # HA: 3 pods, Infinispan cache clustering
+  db:
+    vendor: postgres
+    host: postgres.iam.svc
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  http:
+    tlsSecret: keycloak-tls
+  hostname:
+    hostname: sso.example.internal
+  features:
+    enabled:
+      - token-exchange
+      - admin-fine-grained-authz
+```
+
+Keycloak uses **Infinispan** for distributed session and token caching across instances.
+With three replicas, the cluster can tolerate the loss of one node without session loss.
+
+## Configuring an OIDC client
+
+For a backend API that validates JWTs issued by Keycloak:
+
+```json
+{
+  "clientId": "orders-api",
+  "protocol": "openid-connect",
+  "publicClient": false,
+  "bearerOnly": true,
+  "attributes": {
+    "access.token.lifespan": "300"
+  }
+}
+```
+
+A frontend SPA uses the **Authorization Code flow with PKCE**:
+
+```json
+{
+  "clientId": "orders-spa",
+  "protocol": "openid-connect",
+  "publicClient": true,
+  "redirectUris": ["https://app.example.internal/*"],
+  "webOrigins": ["https://app.example.internal"],
+  "attributes": {
+    "pkce.code.challenge.method": "S256"
+  }
+}
+```
+
+## Token validation in a Java backend
+
+Using the Keycloak Spring Boot adapter (or any JOSE library):
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .jwkSetUri("https://sso.example.internal/realms/prod/protocol/openid-connect/certs")
+                )
+            );
+        return http.build();
+    }
+}
+```
+
+The `jwk-set-uri` endpoint is served by Keycloak — the backend fetches the public keys
+and validates the JWT signature locally, without a round-trip to Keycloak on every request.
+
+## User federation with Active Directory
+
+Keycloak can sync users from an LDAP/Active Directory directory:
+
+```
+Keycloak realm → User Federation → LDAP provider
+  host: ldap.corp.example.internal:636 (LDAPS)
+  bindDn: CN=keycloak-svc,OU=ServiceAccounts,DC=corp,DC=example,DC=internal
+  usersDn: OU=Users,DC=corp,DC=example,DC=internal
+  searchScope: SUBTREE
+  syncPeriod: 3600   # full sync every hour
+```
+
+Group memberships from AD can be mapped to Keycloak roles via **LDAP group mappers**,
+so existing access control structures carry over without manual re-provisioning.
+
+---
+
+{/* Replace with your own architecture diagram */}
+<div class="diagram">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 220">
+    <rect x="10" y="85" width="90" height="50" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="55" y="114" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Browser / App</text>
+    <rect x="160" y="60" width="120" height="100" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="220" y="103" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#4c1d95">Keycloak</text>
+    <text x="220" y="120" text-anchor="middle" font-family="system-ui" font-size="11" fill="#6d28d9">SSO / OIDC / SAML</text>
+    <text x="220" y="136" text-anchor="middle" font-family="system-ui" font-size="10" fill="#7c3aed">3 × replicas</text>
+    <rect x="160" y="180" width="120" height="40" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+    <text x="220" y="204" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#92400e">Active Directory</text>
+    <rect x="350" y="60" width="110" height="50" rx="6" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+    <text x="405" y="89" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#065f46">Backend API</text>
+    <rect x="350" y="130" width="110" height="50" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+    <text x="405" y="159" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#334155">PostgreSQL</text>
+    <line x1="100" y1="110" x2="160" y2="110" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr3)"/>
+    <line x1="280" y1="110" x2="350" y2="85"  stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr3)"/>
+    <line x1="220" y1="160" x2="220" y2="180" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+    <line x1="280" y1="130" x2="350" y2="155" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+    <defs>
+      <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#6b7280"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+## Fine-grained authorisation with UMA 2.0
+
+For resource-level access control (beyond simple roles), Keycloak supports
+**User-Managed Access (UMA 2.0)**. Resources, scopes, and policies are managed via the
+Keycloak Admin API and evaluated at runtime by the backend:
+
+```bash
+# Request a permission ticket
+POST /realms/prod/protocol/openid-connect/token
+grant_type=urn:ietf:params:oauth:grant-type:uma-ticket
+&audience=orders-api
+&permission=order#read
+```
+
+This allows per-resource, per-user decisions without hardcoding access rules in application
+code — a significant advantage in multi-tenant or document-oriented systems.

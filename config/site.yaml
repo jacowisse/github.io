@@ -1,0 +1,20 @@
+site:
+  title: "NoviForge"
+  description: "Expert IT consulting in API Management, IAM, Linux, Kubernetes, Java, and Python"
+  url: "https://www.example.nl"
+  language: "en"
+
+nav:
+  - label: "Home"
+    href: "/"
+  - label: "Expertise"
+    href: "/expertise"
+  - label: "Blogs"
+    href: "/blog"
+  - label: "About"
+    href: "/about"
+  - label: "Contact us"
+    href: "/contact"
+
+footer:
+  copyright: "NoviForge B.V."
